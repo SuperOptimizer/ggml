@@ -217,17 +217,45 @@ struct gguf_context {
 };
 
 struct gguf_reader {
-    FILE * file;
+    // The actual data buffer
+    std::vector<uint8_t> buffer;
+    // Current position in the buffer
+    mutable size_t position;
 
-    gguf_reader(FILE * file) : file(file) {}
+    // Constructor now takes raw data and size
+    gguf_reader(const uint8_t* data, size_t size) : position(0) {
+        // Copy the input data into our buffer
+        buffer.resize(size);
+        memcpy(buffer.data(), data, size);
+    }
 
-    template <typename T>
-    bool read(T & dst) const {
-        return fread(&dst, 1, sizeof(dst), file) == sizeof(dst);
+    // Alternative constructor that takes a FILE*
+    gguf_reader(FILE* file) : position(0) {
+        // Get file size
+        fseek(file, 0, SEEK_END);
+        const size_t file_size = ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        // Allocate and read entire file
+        buffer.resize(file_size);
+        const size_t bytes_read = fread(buffer.data(), 1, file_size, file);
+        if (bytes_read != file_size) {
+            throw std::runtime_error("Failed to read entire file");
+        }
     }
 
     template <typename T>
-    bool read(std::vector<T> & dst, const size_t n) const {
+    bool read(T& dst) const {
+        if (position + sizeof(T) > buffer.size()) {
+            return false;
+        }
+        memcpy(&dst, buffer.data() + position, sizeof(T));
+        position += sizeof(T);
+        return true;
+    }
+
+    template <typename T>
+    bool read(std::vector<T>& dst, const size_t n) const {
         dst.resize(n);
         for (size_t i = 0; i < dst.size(); ++i) {
             if constexpr (std::is_same<T, bool>::value) {
@@ -245,7 +273,7 @@ struct gguf_reader {
         return true;
     }
 
-    bool read(bool & dst) const {
+    bool read(bool& dst) const {
         int8_t tmp = -1;
         if (!read(tmp)) {
             return false;
@@ -254,7 +282,7 @@ struct gguf_reader {
         return true;
     }
 
-    bool read(enum ggml_type & dst) const {
+    bool read(enum ggml_type& dst) const {
         int32_t tmp = -1;
         if (!read(tmp)) {
             return false;
@@ -263,7 +291,7 @@ struct gguf_reader {
         return true;
     }
 
-    bool read(enum gguf_type & dst) const {
+    bool read(enum gguf_type& dst) const {
         int32_t tmp = -1;
         if (!read(tmp)) {
             return false;
@@ -272,19 +300,43 @@ struct gguf_reader {
         return true;
     }
 
-    bool read(std::string & dst) const {
+    bool read(std::string& dst) const {
         uint64_t size = -1;
         if (!read(size)) {
             return false;
         }
+        if (position + size > buffer.size()) {
+            return false;
+        }
         dst.resize(size);
-        return fread(dst.data(), 1, dst.length(), file) == dst.length();
+        memcpy(dst.data(), buffer.data() + position, size);
+        position += size;
+        return true;
     }
 
-    bool read(void * dst, const size_t size) const {
-        return fread(dst, 1, size, file) == size;
+    bool read(void* dst, const size_t size) const {
+        if (position + size > buffer.size()) {
+            return false;
+        }
+        memcpy(dst, buffer.data() + position, size);
+        position += size;
+        return true;
+    }
+
+    // Get current position
+    size_t tell() const {
+        return position;
+    }
+
+    // Seek to a position
+    void seek(size_t pos) const {
+        if (pos > buffer.size()) {
+            throw std::runtime_error("Seek position beyond buffer size");
+        }
+        position = pos;
     }
 };
+
 
 struct gguf_context * gguf_init_empty(void) {
     return new gguf_context;
