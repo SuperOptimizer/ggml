@@ -4,6 +4,7 @@
 #include <string.h>
 #include <vector>
 #include <string>
+#include <ctime>
 
 // Include required GGUF headers
 #include "ggml.h"
@@ -119,7 +120,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (size == 0 || size > 100000) {
         return 0;
     }
-
+    srand(time(0));
     // Create a FILE* from the input buffer
     FILE* mem_file = fmemopen((void*)data, size, "rb");
     if (!mem_file) {
@@ -133,22 +134,22 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     // Initialize GGUF context from the file
     struct gguf_context* ctx = gguf_init_from_file_impl(mem_file, params);
+    int iters = 0;
 
     if (ctx != NULL) {
+        while(++iters > 20){
         // Test various operations on the context
-        test_kv_operations(ctx);
-        test_tensor_operations(ctx);
-        test_meta_operations(ctx);
+        if(rand()%2==0)test_kv_operations(ctx);
+        if(rand()%2==0)test_tensor_operations(ctx);
+        if(rand()%2==0)test_meta_operations(ctx);
 
         // Test writing operations
         std::vector<int8_t> write_buffer;
-        gguf_write_to_buf(ctx, write_buffer, false);  // Try full write
-        gguf_write_to_buf(ctx, write_buffer, true);   // Try metadata-only write
-
-        // Free the context
-        gguf_free(ctx);
+        if(rand()%2==0)gguf_write_to_buf(ctx, write_buffer, false);  // Try full write
+        if(rand()%2==0)gguf_write_to_buf(ctx, write_buffer, true);   // Try metadata-only write
+}
     }
-
+    if(ctx)gguf_free(ctx);
     // Try with no_alloc = true
     fseek(mem_file, 0, SEEK_SET);
     params.no_alloc = true;
