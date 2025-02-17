@@ -28,6 +28,12 @@
 #endif
 
 
+#include <stdexcept>
+#undef GGML_ASSERT
+#define GGML_ASSERT(x) if (!(x)) throw std::runtime_error("asdf");
+
+
+
 // backend buffer type
 
 const char * ggml_backend_buft_name(ggml_backend_buffer_type_t buft) {

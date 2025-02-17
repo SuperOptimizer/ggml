@@ -80,6 +80,13 @@ struct backtrace_state {
     void ** end;
 };
 
+
+
+
+#undef GGML_ASSERT
+#define GGML_ASSERT(x) if (!(x)) throw_error()
+
+
 static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context* context, void* arg) {
     struct backtrace_state * state = (struct backtrace_state *)arg;
     uintptr_t pc = _Unwind_GetIP(context);

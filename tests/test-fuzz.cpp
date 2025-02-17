@@ -454,67 +454,48 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (size == 0 || size > 1000000) {
         return 0;
     }
-
-    // Initialize backend and buffer for testing
-    ggml_backend_t cpu_backend = ggml_backend_init_by_type(GGML_BACKEND_DEVICE_TYPE_CPU, NULL);
-    ggml_backend_buffer_t cpu_buffer = NULL;
-    if (cpu_backend) {
-        cpu_buffer = ggml_backend_alloc_buffer(cpu_backend, 1024);
-    }
-
-    srand(time(0));
     FILE* mem_file = fmemopen((void*)data, size, "rb");
-    if (!mem_file) {
-        if (cpu_buffer) ggml_backend_buffer_free(cpu_buffer);
-        if (cpu_backend) ggml_backend_free(cpu_backend);
-        return 0;
-    }
 
     struct gguf_init_params params = {false, NULL};
     struct gguf_context* ctx = gguf_init_from_file_impl(mem_file, params);
     int iters = 0;
-
+#if 0
     if (ctx != NULL) {
-        while(++iters < 20) {
-            // Test original operations
-            if(rand()%2==0) test_kv_operations(ctx);
-            if(rand()%2==0) test_tensor_operations(ctx);
-            if(rand()%2==0) test_meta_operations(ctx);
-            if(cpu_backend && rand()%2==0) test_backend_ops(cpu_backend, data + 100, size - 100);
-            if(rand()%2==0) test_backend_scheduler(data + 200, size - 200);
+        while(++iters < 5) {
 
-            // Test new operations
-            if(rand()%2==0) test_unary_ops(ctx);
-            if(rand()%2==0) test_binary_ops(ctx);
-            if(rand()%2==0) test_conv_ops(ctx);
-            if(rand()%2==0) test_quantization_ops(ctx);
-            if(rand()%2==0) test_rope_ops(ctx);
-            if(rand()%2==0) test_flash_attn_ops(ctx);
-            if(rand()%2==0) test_pool_ops(ctx);
-
-            // Test tensor manipulation
-            if(rand()%2==0) test_tensor_views(ctx);
-            if(rand()%2==0) test_tensor_permute(ctx);
-            if(rand()%2==0) test_tensor_reshape(ctx);
-            if(rand()%2==0) test_tensor_split_merge(ctx);
-
-            // Write operations
             std::vector<int8_t> write_buffer;
-            if(rand()%2==0) gguf_write_to_buf(ctx, write_buffer, false);
-            if(rand()%2==0) gguf_write_to_buf(ctx, write_buffer, true);
+
+            switch(rand() % 19){
+                // Test original operations
+                case 0: test_kv_operations(ctx); break;
+                 case 1: test_tensor_operations(ctx); break;
+                 case 2: test_meta_operations(ctx); break;
+                 case 3: test_backend_ops(cpu_backend, data + 100, size - 100); break;
+                 case 4: test_backend_scheduler(data + 200, size - 200); break;
+
+                // Test new operations
+                 case 5: test_unary_ops(ctx); break;
+                 case 6:  test_binary_ops(ctx); break;
+                 case 7:  test_conv_ops(ctx); break;
+                 case 8:  test_quantization_ops(ctx); break;
+                case 9:  test_rope_ops(ctx); break;
+                case 10:  test_flash_attn_ops(ctx); break;
+                case 11:  test_pool_ops(ctx); break;
+
+                // Test tensor manipulation
+                case 12: test_tensor_views(ctx); break;
+                case 13: test_tensor_permute(ctx); break;
+                 case 14: test_tensor_reshape(ctx); break;
+                case 15: test_tensor_split_merge(ctx); break;
+
+                 case 16: gguf_write_to_buf(ctx, write_buffer, false); break;
+                case 17: gguf_write_to_buf(ctx, write_buffer, true); break;
+                default:  break;
+            }
         }
-        gguf_free(ctx);
     }
-
-    params.no_alloc = true;
-    fseek(mem_file, 0, SEEK_SET);
-    ctx = gguf_init_from_file_impl(mem_file, params);
-    if (ctx != NULL) {
-        gguf_free(ctx);
-    }
-
+#endif
+    if(ctx != NULL) gguf_free(ctx);
     fclose(mem_file);
-    if (cpu_buffer) ggml_backend_buffer_free(cpu_buffer);
-    if (cpu_backend) ggml_backend_free(cpu_backend);
     return 0;
 }

@@ -11,6 +11,13 @@
 #include <type_traits>
 #include <vector>
 
+
+
+#include <stdexcept>
+#undef GGML_ASSERT
+#define GGML_ASSERT(x) if (!(x)) throw std::runtime_error("asdf");
+
+
 #ifdef _WIN32
 #    define WIN32_LEAN_AND_MEAN
 #    ifndef NOMINMAX

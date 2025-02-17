@@ -13,6 +13,10 @@
 #include <random>
 #include <vector>
 
+#include <stdexcept>
+#undef GGML_ASSERT
+#define GGML_ASSERT(x) if (!(x)) throw std::runtime_error("asdf");
+
 struct ggml_opt_dataset {
     struct ggml_context   * ctx    = nullptr;
     ggml_backend_buffer_t   buf    = nullptr;

@@ -16,6 +16,9 @@
 #include <climits>
 #include <vector>
 
+#undef GGML_ASSERT
+#define GGML_ASSERT(x) if (!(x)) throw std::runtime_error("asdf");
+
 const size_t MAX_ARRAY_LENGTH = 1000000;  // Adjust this maximum as needed.
 constexpr int64_t MAX_TENSOR_DIM = 100000;
 #define MAX_STRING_LENGTH 65535
@@ -1441,3 +1444,5 @@ void gguf_get_meta_data(const struct gguf_context * ctx, void * data) {
     gguf_write_to_buf(ctx, buf, /*only_meta =*/ true);
     memcpy(data, buf.data(), buf.size());
 }
+
+void throw_error(void){throw std::runtime_error("asdf");}
