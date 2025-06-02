@@ -36,3 +36,16 @@ __pycache__/
 # Model files
 ggml-model-f16.bin
 *.bat
+
+build_nosan/**
+build_asan/**
+build_ubsan/**
+build_msan/**
+build_tsan/**
+build_cfisan/**
+build_sand_nosan/**
+build_sand_msan/**
+build_sand_tsan/**
+build_sand_cfisan/**
+build_redqueen/**
+build_laf/**

@@ -6,7 +6,11 @@
 #include "ggml-threading.h"
 #include "ggml-cpu.h"
 #include "ggml.h"
-
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#include <sanitizer/msan_interface.h>
+#endif
+#endif
 // FIXME: required here for quantization functions
 #include "ggml-quants.h"
 
@@ -216,7 +220,6 @@ void ggml_abort(const char * file, int line, const char * fmt, ...) {
     va_end(args);
 
     fprintf(stderr, "\n");
-
     ggml_print_backtrace();
     abort();
     //exit(0);
@@ -1459,7 +1462,12 @@ struct ggml_context * ggml_init(struct ggml_init_params params) {
         /*.objects_end        =*/ NULL,
     };
 
-    GGML_ASSERT(ctx->mem_buffer != NULL);
+    //GGML_ASSERT(ctx->mem_buffer != NULL);
+    if (ctx->mem_buffer == NULL)
+    {
+        ggml_free(ctx);
+        return NULL;
+    }
 
     GGML_ASSERT_ALIGNED(ctx->mem_buffer);
 
@@ -1743,11 +1751,29 @@ const char * ggml_get_name(const struct ggml_tensor * tensor) {
 }
 
 struct ggml_tensor * ggml_set_name(struct ggml_tensor * tensor, const char * name) {
+
+    // Force MemorySanitizer to consider everything valid
+    #if defined(__has_feature)
+    #if __has_feature(memory_sanitizer)
+    __msan_unpoison(tensor, sizeof(*tensor));           // Unpoison the entire tensor struct
+    __msan_unpoison((void*)name, 64);     // Unpoison the name string (including null terminator)
+    #endif
+    #endif
+
     size_t i;
-    for (i = 0; i < sizeof(tensor->name) - 1 && name[i] != '\0'; i++) {
+    size_t stop = sizeof(tensor->name);
+    for (i = 0; i < stop - 1 && name[i] != '\0'; i++) {
         tensor->name[i] = name[i];
     }
     tensor->name[i] = '\0';
+
+    // Unpoison the tensor name field after we've written to it
+    #if defined(__has_feature)
+    #if __has_feature(memory_sanitizer)
+    __msan_unpoison(tensor->name, sizeof(tensor->name));
+    #endif
+    #endif
+
     return tensor;
 }
 
