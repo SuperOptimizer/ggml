@@ -49,3 +49,4 @@ build_sand_tsan/**
 build_sand_cfisan/**
 build_redqueen/**
 build_laf/**
+build_leak/**
