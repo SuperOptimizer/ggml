@@ -644,7 +644,7 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size) {
     srand(time(NULL));
     ggml_time_init();
 
-    ggml_opt_dataset_t dataset = ggml_opt_dataset_init(GGML_TYPE_F32, GGML_TYPE_F32, MNIST_NINPUT, MNIST_NCLASSES, MNIST_NTEST, MNIST_NBATCH_PHYSICAL);
+    ggml_opt_dataset_t dataset = ggml_opt_dataset_init(GGML_TYPE_F32, GGML_TYPE_F32, MNIST_NINPUT, MNIST_NCLASSES, 1000, 100);
 
     mnist_model model = mnist_model_init_from_file(data, size, "", MNIST_NBATCH_LOGICAL, MNIST_NBATCH_PHYSICAL);
     mnist_model_build(model);
