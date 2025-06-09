@@ -5958,25 +5958,26 @@ void ggml_build_backward_expand(
     free(grads_needed);
 }
 
+
 static void * incr_ptr_aligned(void ** p, size_t size, size_t align) {
-    void * ptr = *p;
-    ptr = (void *) GGML_PAD((uintptr_t) ptr, align);
-    *p = (void *) ((char *) ptr + size);
-    return ptr;
+    uintptr_t ptr_val = (uintptr_t) *p;
+    ptr_val = GGML_PAD(ptr_val, align);
+    *p = (void *) (ptr_val + size);
+    return (void *) ptr_val;
 }
 
 static size_t ggml_graph_nbytes(size_t size, bool grads) {
     size_t hash_size = ggml_hash_size(size * 2);
-    void * p = 0;
-    incr_ptr_aligned(&p, sizeof(struct ggml_cgraph), 1);
-    incr_ptr_aligned(&p, size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // nodes
-    incr_ptr_aligned(&p, size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // leafs
-    incr_ptr_aligned(&p, hash_size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // hash keys
+    uintptr_t p = 0;
+    incr_ptr_aligned((void **) &p, sizeof(struct ggml_cgraph), 1);
+    incr_ptr_aligned((void **) &p, size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // nodes
+    incr_ptr_aligned((void **) &p, size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // leafs
+    incr_ptr_aligned((void **) &p, hash_size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // hash keys
     if (grads) {
-        incr_ptr_aligned(&p, hash_size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // grads
-        incr_ptr_aligned(&p, hash_size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // grad_accs
+        incr_ptr_aligned((void **) &p, hash_size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // grads
+        incr_ptr_aligned((void **) &p, hash_size * sizeof(struct ggml_tensor *), sizeof(struct ggml_tensor *)); // grad_accs
     }
-    incr_ptr_aligned(&p, ggml_bitset_size(hash_size) * sizeof(ggml_bitset_t), sizeof(ggml_bitset_t));
+    incr_ptr_aligned((void **) &p, ggml_bitset_size(hash_size) * sizeof(ggml_bitset_t), sizeof(ggml_bitset_t));
 
     size_t nbytes = (size_t) p;
     return nbytes;
